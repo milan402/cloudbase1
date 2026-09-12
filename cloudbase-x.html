@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloudBase X — Build the backend. Skip the boilerplate.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1626;
+    --ink-2:#141F35;
+    --panel:#101a2e;
+    --line: rgba(255,255,255,0.08);
+    --line-strong: rgba(255,255,255,0.14);
+    --paper:#F3F2ED;
+    --paper-2:#EAE8E0;
+    --sky:#2F6FED;
+    --sky-light:#8FB4FF;
+    --signal:#FF7A3D;
+    --slate:#5B6472;
+    --slate-dark:#232B38;
+    --good:#2FAE72;
+    --bad:#E5484D;
+    --white:#FFFFFF;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Inter', sans-serif;
+    color:var(--slate-dark);
+    background:var(--paper);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{font-family:'Space Grotesk', sans-serif; letter-spacing:-0.01em;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  a{text-decoration:none; color:inherit;}
+  img,svg{display:block; max-width:100%;}
+  button{font-family:inherit;}
+  .wrap{max-width:1240px; margin:0 auto; padding:0 32px;}
+  @media (max-width:720px){.wrap{padding:0 20px;}}
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  /* ---------- NAV ---------- */
+  nav.topnav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(243,242,237,0.86);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(0,0,0,0.06);
+  }
+  .nav-inner{ display:flex; align-items:center; justify-content:space-between; height:68px; }
+  .brand{display:flex; align-items:center; gap:10px; font-weight:700; font-size:19px; cursor:pointer;}
+  .brand-mark{
+    width:30px; height:30px; border-radius:8px;
+    background:linear-gradient(135deg, var(--sky), var(--ink));
+    position:relative; flex-shrink:0;
+  }
+  .brand-mark::after{
+    content:""; position:absolute; inset:8px;
+    border:2px solid var(--white); border-radius:3px;
+    border-right:none; border-bottom:none;
+    transform:rotate(45deg);
+  }
+  .nav-links{display:flex; gap:34px; font-size:14.5px; font-weight:500; color:var(--slate);}
+  .nav-links a:hover{color:var(--ink);}
+  .nav-right{display:flex; align-items:center; gap:20px; font-size:14.5px; font-weight:500;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:11px 20px; border-radius:9px; font-weight:600; font-size:14.5px;
+    cursor:pointer; border:none; transition:transform .15s ease, opacity .15s ease;
+  }
+  .btn:hover{opacity:0.92;}
+  .btn-primary{background:var(--ink); color:var(--white);}
+  .btn-signal{background:var(--signal); color:var(--white);}
+  .btn-ghost{background:transparent; color:var(--slate-dark); border:1px solid rgba(0,0,0,0.14);}
+  .btn-ghost:hover{border-color:rgba(0,0,0,0.3);}
+  .btn-block{width:100%;}
+  @media (max-width:900px){.nav-links{display:none;}}
+
+  /* ---------- HERO ---------- */
+  .hero{padding:96px 0 70px; position:relative; overflow:hidden;}
+  .hero-grid{ display:grid; grid-template-columns:1.05fr 1fr; gap:56px; align-items:center; }
+  @media (max-width:980px){.hero-grid{grid-template-columns:1fr;}}
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:13.5px; font-weight:500; color:var(--slate-dark);
+    background:var(--white); border:1px solid rgba(0,0,0,0.08);
+    padding:7px 14px 7px 10px; border-radius:99px; margin-bottom:26px;
+  }
+  .eyebrow .dot{width:7px; height:7px; border-radius:50%; background:var(--good);}
+  .hero h1{ font-size:58px; line-height:1.04; font-weight:700; color:var(--ink); margin-bottom:22px; }
+  .hero h1 .accent{color:var(--sky);}
+  @media (max-width:640px){.hero h1{font-size:38px;}}
+  .hero p.lede{ font-size:18px; line-height:1.6; color:var(--slate); max-width:480px; margin-bottom:34px; }
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:40px;}
+  .hero-stats{display:flex; gap:36px; flex-wrap:wrap;}
+  .hero-stat b{display:block; font-family:'Space Grotesk'; font-size:22px; color:var(--ink);}
+  .hero-stat span{font-size:13px; color:var(--slate);}
+
+  .console{
+    background:var(--panel); border-radius:16px; border:1px solid var(--line);
+    box-shadow:0 30px 60px -20px rgba(14,22,38,0.45);
+    overflow:hidden; color:var(--white);
+  }
+  .console-bar{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .console-bar .dots{display:flex; gap:6px;}
+  .console-bar .dots span{width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,0.15);}
+  .console-bar .path{font-size:12.5px; color:rgba(255,255,255,0.45);}
+  .console-body{padding:22px;}
+  .console-line{display:flex; gap:10px; font-size:13.5px; line-height:1.9;}
+  .console-line .k{color:#7DA6FF;}
+  .console-line .s{color:#8CE0B8;}
+  .console-line .c{color:rgba(255,255,255,0.4);}
+  .console-line .p{color:#FFB07C;}
+  .console-divider{height:1px; background:var(--line); margin:16px 0;}
+  .badge-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;}
+  .badge{
+    font-size:12px; padding:6px 11px; border-radius:99px; border:1px solid var(--line-strong);
+    color:rgba(255,255,255,0.75); display:flex; align-items:center; gap:6px;
+  }
+  .badge .dot{width:6px; height:6px; border-radius:50%; background:var(--good);}
+
+  /* ---------- STRIP ---------- */
+  .strip{border-top:1px solid rgba(0,0,0,0.06); border-bottom:1px solid rgba(0,0,0,0.06); background:var(--paper-2);}
+  .strip-inner{ display:flex; justify-content:space-between; padding:34px 0; flex-wrap:wrap; gap:26px; }
+  .strip-item{display:flex; align-items:flex-start; gap:12px; max-width:280px;}
+  .strip-item .ic{
+    width:36px; height:36px; border-radius:9px; background:var(--white);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    border:1px solid rgba(0,0,0,0.08);
+  }
+  .strip-item h4{font-size:14.5px; margin-bottom:3px;}
+  .strip-item p{font-size:13px; color:var(--slate);}
+
+  .section{padding:96px 0;}
+  .section-head{max-width:600px; margin-bottom:52px;}
+  .section-head.center{max-width:640px; margin-left:auto; margin-right:auto; text-align:center;}
+  .section-head h2{font-size:36px; color:var(--ink); margin-bottom:14px;}
+  .section-head p{font-size:16.5px; color:var(--slate); line-height:1.6;}
+
+  .feature-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:rgba(0,0,0,0.08); border:1px solid rgba(0,0,0,0.08); border-radius:16px; overflow:hidden;}
+  @media (max-width:900px){.feature-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:600px){.feature-grid{grid-template-columns:1fr;}}
+  .feature{background:var(--white); padding:32px 28px;}
+  .feature:hover{background:#FCFBF8;}
+  .feature .ic{ width:42px; height:42px; border-radius:10px; margin-bottom:18px; display:flex; align-items:center; justify-content:center; }
+  .feature h3{font-size:17px; margin-bottom:8px; color:var(--ink);}
+  .feature p{font-size:14px; color:var(--slate); line-height:1.55;}
+
+  .showcase{background:var(--ink); border-radius:20px; padding:0; overflow:hidden; border:1px solid var(--line);}
+  .showcase-top{ display:flex; align-items:center; justify-content:space-between; padding:18px 26px; border-bottom:1px solid var(--line); }
+  .showcase-top .left{display:flex; align-items:center; gap:10px; color:var(--white); font-weight:600; font-size:14.5px;}
+  .showcase-top .status{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--good);}
+  .dash-grid{display:grid; grid-template-columns:220px 1fr 260px; }
+  @media (max-width:980px){.dash-grid{grid-template-columns:1fr;}}
+  .dash-side{border-right:1px solid var(--line); padding:20px 12px;}
+  .dash-side .item{ display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; font-size:13.5px; color:rgba(255,255,255,0.55); margin-bottom:2px; cursor:pointer; }
+  .dash-side .item.active{background:rgba(47,111,237,0.16); color:#8FB4FF;}
+  .dash-side .item:hover{color:rgba(255,255,255,0.85);}
+  .dash-side .item .sq{width:6px; height:6px; border-radius:2px; background:currentColor; opacity:.7;}
+  .dash-main{padding:26px; border-right:1px solid var(--line);}
+  @media (max-width:980px){.dash-main{border-right:none; border-bottom:1px solid var(--line);}}
+  .dash-main h4{color:var(--white); font-size:19px; margin-bottom:18px;}
+  .stat-row{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px;}
+  @media (max-width:640px){.stat-row{grid-template-columns:1fr;}}
+  .stat-card{ background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .stat-card span.lbl{font-size:12px; color:rgba(255,255,255,0.45);}
+  .stat-card b{display:block; font-family:'Space Grotesk'; color:var(--white); font-size:24px; margin:4px 0;}
+  .stat-card .delta{font-size:11.5px; color:var(--good);}
+  .chart-card{ background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:12px; padding:18px 18px 8px; }
+  .chart-card .chead{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .chart-card .chead span{color:rgba(255,255,255,0.85); font-size:13.5px; font-weight:600;}
+  .chart-card .chead small{color:rgba(255,255,255,0.4); font-size:11.5px;}
+  .table-mini{width:100%; border-collapse:collapse; margin-top:16px; font-size:13px;}
+  .table-mini th{ text-align:left; color:rgba(255,255,255,0.4); font-weight:500; font-size:11.5px; padding:8px 4px; border-bottom:1px solid var(--line); }
+  .table-mini td{padding:9px 4px; color:rgba(255,255,255,0.75); border-bottom:1px solid rgba(255,255,255,0.04);}
+  .table-mini td.mono{color:rgba(255,255,255,0.5); font-size:12px;}
+  .dash-right{padding:22px;}
+  .dash-right h5{color:var(--white); font-size:13.5px; margin-bottom:14px;}
+  .activity{display:flex; gap:10px; margin-bottom:16px;}
+  .activity .adot{width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0;}
+  .activity p{color:rgba(255,255,255,0.8); font-size:12.5px; line-height:1.4;}
+  .activity time{color:rgba(255,255,255,0.35); font-size:11px;}
+  .qa{ display:flex; align-items:center; justify-content:space-between; padding:11px 12px; border:1px solid var(--line); border-radius:9px; margin-bottom:8px; cursor:default; }
+  .qa span{color:rgba(255,255,255,0.8); font-size:12.5px; font-weight:500;}
+
+  .architect{ background:linear-gradient(135deg, var(--ink) 0%, #1B2A47 100%); border-radius:20px; padding:56px; color:var(--white); position:relative; overflow:hidden; }
+  @media (max-width:640px){.architect{padding:32px 22px;}}
+  .architect::before{ content:""; position:absolute; width:420px; height:420px; border-radius:50%; background:radial-gradient(circle, rgba(47,111,237,0.35), transparent 70%); top:-160px; right:-120px; }
+  .architect-grid{display:grid; grid-template-columns:1fr 1fr; gap:48px; position:relative; z-index:1;}
+  @media (max-width:900px){.architect-grid{grid-template-columns:1fr;}}
+  .architect h2{font-size:30px; margin-bottom:14px;}
+  .architect > .architect-grid > div:first-child p{color:rgba(255,255,255,0.65); font-size:15.5px; line-height:1.6; margin-bottom:26px; max-width:420px;}
+  .prompt-box{ background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:12px; padding:16px; font-size:14px; color:rgba(255,255,255,0.85); line-height:1.6; margin-bottom:16px; }
+  .flow{display:flex; flex-direction:column; gap:0;}
+  .flow-node{ display:flex; align-items:center; gap:14px; padding:14px 16px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:12px; }
+  .flow-node .n-ic{ width:36px; height:36px; border-radius:9px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .flow-node b{display:block; font-size:14px; font-weight:600;}
+  .flow-node span{font-size:12px; color:rgba(255,255,255,0.5);}
+  .flow-arrow{display:flex; justify-content:center; padding:4px 0; color:rgba(255,255,255,0.3);}
+
+  /* ---------- PRICING ---------- */
+  .pricing-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:22px;}
+  @media (max-width:900px){.pricing-grid{grid-template-columns:1fr; max-width:420px; margin:0 auto;}}
+  .price-card{ background:var(--white); border:1px solid rgba(0,0,0,0.09); border-radius:16px; padding:32px 28px; display:flex; flex-direction:column; }
+  .price-card.featured{ background:var(--ink); color:var(--white); border-color:var(--ink); position:relative; transform:translateY(-8px); box-shadow:0 24px 48px -16px rgba(14,22,38,0.35); }
+  .price-tag{ position:absolute; top:-13px; left:28px; background:var(--signal); color:white; font-size:11.5px; font-weight:700; padding:5px 12px; border-radius:99px; }
+  .price-card h3{font-size:17px; margin-bottom:6px;}
+  .price-card .price-sub{font-size:13.5px; color:var(--slate); margin-bottom:22px;}
+  .price-card.featured .price-sub{color:rgba(255,255,255,0.55);}
+  .price-amount{display:flex; align-items:baseline; gap:5px; margin-bottom:26px;}
+  .price-amount b{font-family:'Space Grotesk'; font-size:42px;}
+  .price-amount span{font-size:14px; color:var(--slate);}
+  .price-card.featured .price-amount span{color:rgba(255,255,255,0.5);}
+  .price-list{list-style:none; margin-bottom:28px; flex-grow:1;}
+  .price-list li{ display:flex; align-items:flex-start; gap:10px; font-size:14px; padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.06); }
+  .price-card.featured .price-list li{border-bottom:1px solid rgba(255,255,255,0.08);}
+  .price-list li:last-child{border-bottom:none;}
+  .price-list li .chk{color:var(--good); flex-shrink:0; font-weight:700;}
+  .price-card.featured .price-list li .chk{color:#6FE3A8;}
+
+  .cta-band{ background:var(--ink); border-radius:20px; padding:70px 40px; text-align:center; color:var(--white); }
+  .cta-band h2{font-size:34px; margin-bottom:14px;}
+  .cta-band p{color:rgba(255,255,255,0.6); font-size:16px; margin-bottom:30px;}
+  .cta-band .hero-ctas{justify-content:center;}
+
+  footer{border-top:1px solid rgba(0,0,0,0.08); padding:56px 0 34px;}
+  .foot-grid{display:grid; grid-template-columns:1.4fr repeat(3,1fr); gap:32px; margin-bottom:40px;}
+  @media (max-width:760px){.foot-grid{grid-template-columns:1fr 1fr;}}
+  .foot-col h5{font-size:13px; color:var(--slate); margin-bottom:14px; font-weight:600;}
+  .foot-col a{display:block; font-size:14px; color:var(--slate-dark); margin-bottom:10px;}
+  .foot-col a:hover{color:var(--sky);}
+  .foot-bottom{display:flex; justify-content:space-between; align-items:center; padding-top:26px; border-top:1px solid rgba(0,0,0,0.08); font-size:13px; color:var(--slate); flex-wrap:wrap; gap:12px;}
+
+  /* ---------- AUTH SCREEN ---------- */
+  .auth-wrap{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 20px; background:
+      radial-gradient(circle at 15% 10%, rgba(47,111,237,0.10), transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(255,122,61,0.08), transparent 45%), var(--paper); }
+  .auth-card{ width:100%; max-width:400px; background:var(--white); border:1px solid rgba(0,0,0,0.08); border-radius:18px; padding:36px 32px; box-shadow:0 30px 60px -30px rgba(14,22,38,0.25); }
+  .auth-card .brand{justify-content:center; margin-bottom:22px;}
+  .auth-card h2{font-size:23px; text-align:center; margin-bottom:6px;}
+  .auth-card p.sub{font-size:14px; color:var(--slate); text-align:center; margin-bottom:26px;}
+  .oauth-btn{ display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:11px; border-radius:9px; border:1px solid rgba(0,0,0,0.14); background:var(--white); font-size:14px; font-weight:600; cursor:pointer; margin-bottom:10px; color:var(--slate-dark); }
+  .oauth-btn:hover{background:#FAF9F6;}
+  .oauth-icon{width:18px; height:18px; flex-shrink:0;}
+  .divider{display:flex; align-items:center; gap:12px; margin:20px 0; color:var(--slate); font-size:12.5px;}
+  .divider::before, .divider::after{content:""; flex:1; height:1px; background:rgba(0,0,0,0.1);}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--slate-dark);}
+  .field input{ width:100%; padding:11px 13px; border-radius:9px; border:1px solid rgba(0,0,0,0.15); font-size:14px; font-family:inherit; }
+  .field input:focus{outline:2px solid var(--sky); outline-offset:1px; border-color:transparent;}
+  .auth-foot{text-align:center; font-size:13.5px; color:var(--slate); margin-top:20px;}
+  .auth-foot a{color:var(--sky); font-weight:600;}
+  .back-link{display:inline-flex; align-items:center; gap:6px; font-size:13.5px; color:var(--slate); margin-bottom:22px; cursor:pointer;}
+  .back-link:hover{color:var(--ink);}
+  .auth-error{font-size:12.5px; color:var(--bad); min-height:0; margin:-4px 0 4px; line-height:1.5;}
+  .auth-error.success{color:var(--good);}
+  .oauth-btn:disabled, .btn:disabled{opacity:0.55; cursor:not-allowed;}
+
+  /* ---------- APP DASHBOARD SCREEN ---------- */
+  .app-shell{display:flex; min-height:100vh; background:var(--ink-2);}
+  .app-sidebar{ width:230px; flex-shrink:0; background:var(--ink); border-right:1px solid var(--line); padding:18px 12px; display:flex; flex-direction:column; }
+  .app-sidebar .brand{color:var(--white); padding:8px 8px 18px; font-size:16px;}
+  .proj-switch{ display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.05); border:1px solid var(--line); border-radius:9px; padding:9px 11px; font-size:13px; color:rgba(255,255,255,0.8); margin-bottom:18px; cursor:default; }
+  .app-nav .item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; font-size:13.5px; color:rgba(255,255,255,0.55); margin-bottom:2px; cursor:pointer; }
+  .app-nav .item.active{background:rgba(47,111,237,0.16); color:#8FB4FF;}
+  .app-nav .item:hover{color:rgba(255,255,255,0.9);}
+  .app-nav .item .ic{width:16px; text-align:center; font-size:13px;}
+  .nav-sep{height:1px; background:var(--line); margin:14px 6px;}
+  .app-sidebar-foot{margin-top:auto; padding-top:14px;}
+  .user-chip{ display:flex; align-items:center; gap:10px; padding:8px; border-radius:9px; cursor:pointer; }
+  .user-chip:hover{background:rgba(255,255,255,0.05);}
+  .avatar{width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,var(--sky),var(--signal)); flex-shrink:0; display:flex; align-items:center; justify-content:center; color:white; font-size:12px; font-weight:700;}
+  .user-chip .un{font-size:13px; color:white; font-weight:600;}
+  .user-chip .ue{font-size:11.5px; color:rgba(255,255,255,0.4);}
+
+  .app-main{flex-grow:1; overflow-y:auto;}
+  .app-topbar{ display:flex; align-items:center; justify-content:space-between; padding:16px 30px; border-bottom:1px solid var(--line); }
+  .app-topbar h2{color:white; font-size:19px;}
+  .app-topbar .status{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--good);}
+  .app-content{padding:28px 30px 60px;}
+  .app-pane{display:none;}
+  .app-pane.active{display:block;}
+
+  .tabs{display:flex; gap:4px; margin-bottom:20px; border-bottom:1px solid var(--line);}
+  .tab{ padding:10px 4px; margin-right:20px; font-size:13.5px; color:rgba(255,255,255,0.45); cursor:pointer; border-bottom:2px solid transparent; }
+  .tab.active{color:white; border-bottom-color:var(--sky);}
+  .tab-pane{display:none;}
+  .tab-pane.active{display:block;}
+
+  .card-dark{ background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:12px; padding:20px; }
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:800px){.grid-2{grid-template-columns:1fr;}}
+
+  .provider-row{ display:flex; align-items:center; justify-content:space-between; padding:16px 4px; border-bottom:1px solid var(--line); }
+  .provider-row:last-child{border-bottom:none;}
+  .provider-left{display:flex; align-items:center; gap:12px;}
+  .provider-ic{width:32px; height:32px; border-radius:8px; background:rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center;}
+  .provider-name{color:white; font-size:14px; font-weight:600;}
+  .provider-sub{color:rgba(255,255,255,0.4); font-size:12px;}
+  .toggle{ width:40px; height:22px; border-radius:99px; background:rgba(255,255,255,0.15); position:relative; cursor:pointer; flex-shrink:0; transition:background .15s ease; }
+  .toggle.on{background:var(--good);}
+  .toggle::after{ content:""; position:absolute; width:16px; height:16px; border-radius:50%; background:white; top:3px; left:3px; transition:left .15s ease; }
+  .toggle.on::after{left:21px;}
+
+  .integration-card{ display:flex; align-items:center; justify-content:space-between; padding:18px; border:1px solid var(--line); border-radius:12px; margin-bottom:12px; background:rgba(255,255,255,0.02); }
+  .integration-left{display:flex; align-items:center; gap:14px;}
+  .integration-ic{width:38px; height:38px; border-radius:9px; background:rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center;}
+  .integration-title{color:white; font-size:14.5px; font-weight:600;}
+  .integration-sub{color:rgba(255,255,255,0.42); font-size:12.5px; margin-top:2px;}
+  .pill-connected{ font-size:11.5px; font-weight:600; color:var(--good); background:rgba(47,174,114,0.14); padding:5px 10px; border-radius:99px; display:flex; align-items:center; gap:5px; }
+  .pill-connected .d{width:6px; height:6px; border-radius:50%; background:var(--good);}
+  .repo-row{ display:flex; align-items:center; justify-content:space-between; padding:11px 4px; font-size:13px; color:rgba(255,255,255,0.75); border-bottom:1px solid rgba(255,255,255,0.05); }
+  .repo-row .rname{display:flex; align-items:center; gap:8px;}
+
+  .bucket-row{ display:flex; align-items:center; justify-content:space-between; padding:12px 4px; border-bottom:1px solid var(--line); font-size:13.5px; color:rgba(255,255,255,0.75); }
+  .bucket-row .bl{display:flex; align-items:center; gap:10px;}
+
+  .fn-card{ border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:12px; background:rgba(255,255,255,0.02); display:flex; align-items:center; justify-content:space-between; }
+  .fn-name{color:white; font-size:14px; font-weight:600; font-family:'IBM Plex Mono', monospace;}
+  .fn-sub{color:rgba(255,255,255,0.4); font-size:12px; margin-top:3px;}
+  .fn-status{font-size:11.5px; padding:4px 10px; border-radius:99px; background:rgba(47,174,114,0.14); color:var(--good); font-weight:600;}
+
+  .log-row{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; padding:9px 6px; border-bottom:1px solid rgba(255,255,255,0.05); color:rgba(255,255,255,0.65); display:flex; gap:14px; }
+  .log-row .lvl{width:52px; flex-shrink:0; font-weight:700;}
+  .log-row .lvl.info{color:var(--sky-light);}
+  .log-row .lvl.ok{color:var(--good);}
+  .log-row .lvl.warn{color:#F2B33D;}
+  .log-row .t{color:rgba(255,255,255,0.35); flex-shrink:0;}
+
+  .field-dark label{color:rgba(255,255,255,0.7);}
+  .field-dark input, .field-dark select{ width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--line-strong); background:rgba(255,255,255,0.04); color:white; font-size:13.5px; font-family:inherit; margin-bottom:14px; }
+  .key-box{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; background:rgba(255,255,255,0.04); border:1px solid var(--line); padding:11px 14px; border-radius:8px; color:rgba(255,255,255,0.7); display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .copy-btn{font-size:11.5px; color:var(--sky-light); cursor:pointer; font-weight:600;}
+
+  .plan-banner{ display:flex; align-items:center; justify-content:space-between; background:rgba(255,122,61,0.09); border:1px solid rgba(255,122,61,0.3); border-radius:12px; padding:16px 20px; margin-bottom:22px; }
+  .plan-banner p{color:rgba(255,255,255,0.75); font-size:13.5px;}
+  .plan-banner b{color:white;}
+
+  /* ---------- INTELLIGENCE / HEALTH ---------- */
+  .health-score{font-family:'Space Grotesk'; font-size:56px; color:var(--good); line-height:1;}
+  .health-score span{font-size:20px; color:rgba(255,255,255,0.4); font-family:'Inter';}
+  .cat-row{display:flex; align-items:center; gap:12px; font-size:13px; color:rgba(255,255,255,0.75); margin-bottom:13px;}
+  .cat-row .cat-name{width:110px; flex-shrink:0;}
+  .cat-bar-bg{flex:1; height:6px; background:rgba(255,255,255,0.08); border-radius:99px; overflow:hidden;}
+  .cat-bar-fill{height:100%; border-radius:99px; background:var(--sky);}
+  .cat-row .cat-num{width:30px; text-align:right; color:white; font-weight:600; flex-shrink:0;}
+  .issue-card{ display:flex; gap:13px; padding:14px 16px; border-left:3px solid var(--bad); background:rgba(255,255,255,0.025); border-radius:8px; margin-bottom:10px; }
+  .issue-card.orange{border-left-color:var(--signal);}
+  .issue-card.yellow{border-left-color:#F2B33D;}
+  .issue-ic{font-size:16px; flex-shrink:0; margin-top:1px;}
+  .issue-card b{display:block; color:white; font-size:13.5px; margin-bottom:3px;}
+  .issue-card p{color:rgba(255,255,255,0.5); font-size:12.5px; line-height:1.5;}
+  .issue-card code{font-family:'IBM Plex Mono', monospace; color:var(--sky-light); font-size:12px;}
+  .replay-controls{display:flex; gap:8px;}
+  .replay-btn{ font-size:12.5px; font-weight:600; padding:7px 14px; border-radius:8px; border:1px solid var(--line-strong); color:rgba(255,255,255,0.6); cursor:pointer; background:transparent; }
+  .replay-btn.active{background:var(--sky); color:white; border-color:var(--sky);}
+  .arch-node{fill:rgba(255,255,255,0.05); stroke:var(--line-strong); stroke-width:1;}
+  .arch-node.bottleneck{stroke:var(--bad); stroke-width:2; fill:rgba(229,72,77,0.12);}
+  .arch-label{fill:white; font-family:'Inter'; font-size:12px; font-weight:600;}
+  .arch-sub{fill:rgba(255,255,255,0.4); font-family:'IBM Plex Mono', monospace; font-size:10.5px;}
+  .arch-sub.hot{fill:#FF8A8A; font-weight:700;}
+  .arch-line{stroke:rgba(255,255,255,0.18); stroke-width:1.5; fill:none;}
+  .arch-line.hot{stroke:var(--bad); stroke-width:2;}
+  .mini-health-pill{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; padding:6px 12px; border-radius:99px; background:rgba(47,174,114,0.14); color:var(--good); }
+
+  h3.pane-h{color:white; font-size:16px; margin-bottom:14px;}
+  ::selection{background:var(--sky); color:white;}
+</style>
+</head>
+<body>
+
+<!-- ============= SCREEN 1: LANDING ============= -->
+<div class="screen active" id="screen-landing">
+
+  <nav class="topnav">
+    <div class="wrap nav-inner">
+      <div class="brand" onclick="goTo('screen-landing')"><div class="brand-mark"></div>CloudBase X</div>
+      <div class="nav-links">
+        <a href="#platform">Platform</a>
+        <a href="#features">Solutions</a>
+        <a href="#developers">Developers</a>
+        <a href="#docs">Docs</a>
+        <a href="#pricing-section">Pricing</a>
+      </div>
+      <div class="nav-right">
+        <a onclick="goTo('screen-signin')" style="cursor:pointer;">Sign in</a>
+        <button class="btn btn-primary" onclick="goTo('screen-signup')">Get started</button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> Now serving 40,000+ backends</div>
+        <h1>Ship the backend.<br>Skip the <span class="accent">boilerplate.</span></h1>
+        <p class="lede">CloudBase X bundles your database, auth, storage, realtime sync, and serverless functions into one platform — so you write features, not plumbing.</p>
+        <div class="hero-ctas">
+          <button class="btn btn-signal" onclick="goTo('screen-signup')">Start building free</button>
+          <button class="btn btn-ghost">View documentation</button>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><b>99.98%</b><span>Uptime SLA</span></div>
+          <div class="hero-stat"><b>&lt;40ms</b><span>Median query time</span></div>
+          <div class="hero-stat"><b>SOC 2</b><span>Type II certified</span></div>
+        </div>
+      </div>
+
+      <div class="console">
+        <div class="console-bar">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <div class="path mono">~/projects/acme-app</div>
+        </div>
+        <div class="console-body mono">
+          <div class="console-line"><span class="c">$</span><span>cloudbasex init acme-app</span></div>
+          <div class="console-line"><span class="s">✓</span><span>Postgres database provisioned</span></div>
+          <div class="console-line"><span class="s">✓</span><span>Auth providers configured</span></div>
+          <div class="console-line"><span class="s">✓</span><span>REST + realtime API live</span></div>
+          <div class="console-divider"></div>
+          <div class="console-line"><span class="c">$</span><span>cloudbasex deploy</span></div>
+          <div class="console-line"><span class="p">→</span><span>Building edge functions...</span></div>
+          <div class="console-line"><span class="s">✓</span><span>Deployed to <span class="k">acme-app.cloudbasex.dev</span></span></div>
+          <div class="badge-row">
+            <div class="badge"><span class="dot"></span>Database: online</div>
+            <div class="badge"><span class="dot"></span>Auth: online</div>
+            <div class="badge"><span class="dot"></span>Functions: online</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="strip">
+    <div class="wrap strip-inner">
+      <div class="strip-item"><div class="ic">⌘</div><div><h4>Built for developers</h4><p>SQL-native, with client libraries for every stack you already use.</p></div></div>
+      <div class="strip-item"><div class="ic">◈</div><div><h4>Secure by design</h4><p>Row-level security and audit logs on every table, out of the box.</p></div></div>
+      <div class="strip-item"><div class="ic">▲</div><div><h4>Scale without limits</h4><p>From weekend project to production traffic, same platform throughout.</p></div></div>
+    </div>
+  </section>
+
+  <section class="section" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Everything your backend needs</h2>
+        <p>Six primitives, one dashboard. Wire them together in minutes instead of stitching five different vendors.</p>
+      </div>
+      <div class="feature-grid">
+        <div class="feature"><div class="ic" style="background:rgba(47,111,237,0.12); color:var(--sky);">🗄</div><h3>Database</h3><p>A full Postgres database with a visual table editor, migrations, and instant backups.</p></div>
+        <div class="feature"><div class="ic" style="background:rgba(255,122,61,0.12); color:var(--signal);">◐</div><h3>Authentication</h3><p>Email, Google, GitHub and magic links, with row-level policies enforced at the database.</p></div>
+        <div class="feature"><div class="ic" style="background:rgba(47,174,114,0.12); color:var(--good);">⇄</div><h3>API</h3><p>Auto-generated REST and GraphQL endpoints for every table — no server to write.</p></div>
+        <div class="feature"><div class="ic" style="background:rgba(47,111,237,0.12); color:var(--sky);">▤</div><h3>Storage</h3><p>Upload, transform, and serve files with the same access rules as your data.</p></div>
+        <div class="feature"><div class="ic" style="background:rgba(255,122,61,0.12); color:var(--signal);">◉</div><h3>Realtime</h3><p>Subscribe to database changes and push them to clients — no polling required.</p></div>
+        <div class="feature"><div class="ic" style="background:rgba(47,174,114,0.12); color:var(--good);">✂</div><h3>Functions</h3><p>Run custom server-side logic on demand, deployed straight from your repo.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>One dashboard, your whole backend</h2>
+        <p>Watch traffic, browse your tables, and manage users without leaving the console.</p>
+      </div>
+      <div class="showcase">
+        <div class="showcase-top">
+          <div class="left"><div class="brand-mark" style="width:22px;height:22px;"></div> CloudBase X — Overview</div>
+          <div class="status"><span class="dot" style="width:6px;height:6px;border-radius:50%;background:var(--good);"></span>Operational</div>
+        </div>
+        <div class="dash-grid">
+          <div class="dash-side">
+            <div class="item active"><span class="sq"></span> Overview</div>
+            <div class="item"><span class="sq"></span> Database</div>
+            <div class="item"><span class="sq"></span> Auth</div>
+            <div class="item"><span class="sq"></span> Storage</div>
+            <div class="item"><span class="sq"></span> Realtime</div>
+            <div class="item"><span class="sq"></span> Functions</div>
+            <div class="item"><span class="sq"></span> Logs</div>
+            <div class="item"><span class="sq"></span> Settings</div>
+          </div>
+          <div class="dash-main">
+            <h4>Project overview</h4>
+            <div class="stat-row">
+              <div class="stat-card"><span class="lbl">API requests</span><b>31,204</b><span class="delta">+14% from last week</span></div>
+              <div class="stat-card"><span class="lbl">Active users</span><b>1,847</b><span class="delta">+9% from last week</span></div>
+              <div class="stat-card"><span class="lbl">Database tables</span><b>16</b><span class="delta" style="color:rgba(255,255,255,0.4);">+2 this week</span></div>
+            </div>
+            <div class="chart-card">
+              <div class="chead"><span>API traffic</span><small>Last 7 days</small></div>
+              <svg viewBox="0 0 560 140" width="100%" height="140" preserveAspectRatio="none">
+                <polyline fill="none" stroke="#2F6FED" stroke-width="2" points="0,90 80,70 160,85 240,50 320,65 400,35 480,45 560,20"/>
+                <polyline fill="none" stroke="#FF7A3D" stroke-width="2" points="0,120 80,110 160,118 240,100 320,108 400,95 480,100 560,88" opacity="0.8"/>
+                <polyline fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" points="0,130 80,128 160,131 240,126 320,129 400,124 480,127 560,122"/>
+              </svg>
+            </div>
+            <table class="table-mini">
+              <tr><th>Table</th><th>Rows</th><th>Size</th><th>Updated</th></tr>
+              <tr><td>users</td><td>1,847</td><td>2.4 MB</td><td class="mono">3m ago</td></tr>
+              <tr><td>orders</td><td>612</td><td>1.6 MB</td><td class="mono">8m ago</td></tr>
+              <tr><td>reviews</td><td>3,105</td><td>6.1 MB</td><td class="mono">15m ago</td></tr>
+            </table>
+          </div>
+          <div class="dash-right">
+            <h5>Recent activity</h5>
+            <div class="activity"><span class="adot" style="background:var(--sky);"></span><div><p>New user signed up</p><time>2m ago</time></div></div>
+            <div class="activity"><span class="adot" style="background:var(--good);"></span><div><p>Project deployed to production</p><time>6m ago</time></div></div>
+            <div class="activity"><span class="adot" style="background:var(--signal);"></span><div><p>File uploaded to storage bucket</p><time>11m ago</time></div></div>
+            <div class="activity"><span class="adot" style="background:var(--sky);"></span><div><p>Database query executed</p><time>19m ago</time></div></div>
+            <h5 style="margin-top:22px;">Quick actions</h5>
+            <div class="qa"><span>New table</span><span>›</span></div>
+            <div class="qa"><span>Invite teammate</span><span>›</span></div>
+            <div class="qa"><span>Create function</span><span>›</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="architect">
+        <div class="architect-grid">
+          <div>
+            <h2>Describe it. We'll build it.</h2>
+            <p>Tell the CloudBase X architect what you're building, and it drafts your schema, auth rules, and API — ready to review and deploy.</p>
+            <div class="prompt-box">"I'm building a marketplace where sellers list products and buyers can review and rate them."</div>
+            <button class="btn btn-signal" onclick="goTo('screen-signup')">Generate backend →</button>
+          </div>
+          <div class="flow">
+            <div class="flow-node"><div class="n-ic">🗄</div><div><b>Database schema</b><span>sellers, products, reviews, ratings</span></div></div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node"><div class="n-ic">◐</div><div><b>Auth & permissions</b><span>Seller and buyer roles, row-level access</span></div></div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node"><div class="n-ic">⇄</div><div><b>API endpoints</b><span>REST routes generated for every table</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="section" id="pricing-section">
+    <div class="wrap">
+      <div class="section-head center">
+        <h2>Simple, honest pricing</h2>
+        <p>Start free while you build. Upgrade only when you're ready to ship to real users.</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="price-card">
+          <h3>Free</h3>
+          <p class="price-sub">For side projects and prototypes</p>
+          <div class="price-amount"><b>$0</b><span>/ month</span></div>
+          <ul class="price-list">
+            <li><span class="chk">✓</span> 500 monthly credits (API calls + function runs)</li>
+            <li><span class="chk">✓</span> 1 project, 500 MB database</li>
+            <li><span class="chk">✓</span> 1 GB file storage</li>
+            <li><span class="chk">✓</span> Email + Google sign-in</li>
+            <li><span class="chk">✓</span> Community support</li>
+            <li><span class="chk">✓</span> Project pauses after 7 days idle</li>
+          </ul>
+          <button class="btn btn-ghost btn-block" onclick="goTo('screen-signup')">Start for free</button>
+        </div>
+
+        <div class="price-card featured">
+          <div class="price-tag">Most popular</div>
+          <h3>Pro</h3>
+          <p class="price-sub">For projects headed to production</p>
+          <div class="price-amount"><b>$5.99</b><span>/ month</span></div>
+          <ul class="price-list">
+            <li><span class="chk">✓</span> 25,000 monthly credits</li>
+            <li><span class="chk">✓</span> Unlimited projects, 8 GB database</li>
+            <li><span class="chk">✓</span> 50 GB file storage</li>
+            <li><span class="chk">✓</span> Email, Google & GitHub sign-in</li>
+            <li><span class="chk">✓</span> GitHub-linked auto deploys</li>
+            <li><span class="chk">✓</span> Daily backups, no idle pausing</li>
+            <li><span class="chk">✓</span> Priority email support</li>
+          </ul>
+          <button class="btn btn-signal btn-block" onclick="goTo('screen-signup')">Start Pro trial</button>
+        </div>
+
+        <div class="price-card">
+          <h3>Enterprise</h3>
+          <p class="price-sub">For teams with custom needs</p>
+          <div class="price-amount"><b>Custom</b></div>
+          <ul class="price-list">
+            <li><span class="chk">✓</span> Unlimited credits, usage-based overage</li>
+            <li><span class="chk">✓</span> SSO / SAML and audit logs</li>
+            <li><span class="chk">✓</span> Dedicated infrastructure</li>
+            <li><span class="chk">✓</span> 99.99% uptime SLA</li>
+            <li><span class="chk">✓</span> Dedicated Slack + solutions engineer</li>
+          </ul>
+          <button class="btn btn-ghost btn-block">Talk to sales</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="cta-band">
+        <h2>Build your backend this afternoon.</h2>
+        <p>Free while you're building. Pay only when you ship to real users.</p>
+        <div class="hero-ctas">
+          <button class="btn btn-signal" onclick="goTo('screen-signup')">Start building free</button>
+          <button class="btn btn-ghost" style="border-color:rgba(255,255,255,0.25); color:white;">Talk to sales</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <div class="foot-grid">
+        <div>
+          <div class="brand" style="margin-bottom:14px;"><div class="brand-mark"></div>CloudBase X</div>
+          <p style="font-size:13.5px; color:var(--slate); max-width:260px; line-height:1.6;">The backend platform for teams who'd rather ship product than manage infrastructure.</p>
+        </div>
+        <div class="foot-col"><h5>Platform</h5><a href="#">Database</a><a href="#">Authentication</a><a href="#">Storage</a><a href="#">Realtime</a><a href="#">Functions</a></div>
+        <div class="foot-col"><h5>Developers</h5><a href="#">Documentation</a><a href="#">API reference</a><a href="#">Changelog</a><a href="#">Status</a></div>
+        <div class="foot-col"><h5>Company</h5><a href="#">About</a><a href="#pricing-section">Pricing</a><a href="#">Careers</a><a href="#">Contact</a></div>
+      </div>
+      <div class="foot-bottom"><span>© 2026 CloudBase X. All rights reserved.</span><span>Made for builders.</span></div>
+    </div>
+  </footer>
+</div>
+
+<!-- ============= SCREEN 2: SIGN IN ============= -->
+<div class="screen" id="screen-signin">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="back-link" onclick="goTo('screen-landing')">← Back to home</div>
+      <div class="brand"><div class="brand-mark"></div>CloudBase X</div>
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to continue to your projects</p>
+
+      <button class="oauth-btn" onclick="signInWithProvider('google')">
+        <svg class="oauth-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.9 32.9 29.4 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4c-7.7 0-14.3 4.3-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-2 13.7-5.3l-6.3-5.3C29.4 35.4 26.9 36 24 36c-5.3 0-9.8-3.1-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 3-3 5.4-5.6 6.9l6.3 5.3C39.4 37.4 44 31.6 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+        Continue with Google
+      </button>
+      <button class="oauth-btn" onclick="signInWithProvider('github')">
+        <svg class="oauth-icon" viewBox="0 0 24 24"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.8.1-.7.1-.7 1.2.1 1.9 1.3 1.9 1.3 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.4-1.3-5.4-5.9 0-1.3.5-2.4 1.3-3.2-.1-.3-.6-1.6.1-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.6 3.3-1.2 3.3-1.2.7 1.6.2 2.9.1 3.2.8.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.4 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>
+        Continue with GitHub
+      </button>
+
+      <div class="divider">or sign in with email</div>
+
+      <div class="field"><label>Email address</label><input id="signinEmail" type="email" placeholder="you@company.com"></div>
+      <div class="field"><label>Password</label><input id="signinPassword" type="password" placeholder="••••••••••"></div>
+      <p class="auth-error" id="signinError"></p>
+      <button class="btn btn-primary btn-block" style="margin-top:6px;" id="signinSubmitBtn" onclick="handleEmailSignIn()">Sign in</button>
+
+      <p class="auth-foot">Don't have an account? <a onclick="goTo('screen-signup')" style="cursor:pointer;">Sign up free</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ============= SCREEN 3: SIGN UP ============= -->
+<div class="screen" id="screen-signup">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="back-link" onclick="goTo('screen-landing')">← Back to home</div>
+      <div class="brand"><div class="brand-mark"></div>CloudBase X</div>
+      <h2>Create your account</h2>
+      <p class="sub">Free forever on the Starter plan — no card required</p>
+
+      <button class="oauth-btn" onclick="signInWithProvider('google')">
+        <svg class="oauth-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.9 32.9 29.4 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4c-7.7 0-14.3 4.3-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-2 13.7-5.3l-6.3-5.3C29.4 35.4 26.9 36 24 36c-5.3 0-9.8-3.1-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 3-3 5.4-5.6 6.9l6.3 5.3C39.4 37.4 44 31.6 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+        Continue with Google
+      </button>
+      <button class="oauth-btn" onclick="signInWithProvider('github')">
+        <svg class="oauth-icon" viewBox="0 0 24 24"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.8.1-.7.1-.7 1.2.1 1.9 1.3 1.9 1.3 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.4-1.3-5.4-5.9 0-1.3.5-2.4 1.3-3.2-.1-.3-.6-1.6.1-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.6 3.3-1.2 3.3-1.2.7 1.6.2 2.9.1 3.2.8.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.4 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>
+        Continue with GitHub
+      </button>
+
+      <div class="divider">or sign up with email</div>
+
+      <div class="field"><label>Full name</label><input id="signupName" type="text" placeholder="Ada Lovelace"></div>
+      <div class="field"><label>Email address</label><input id="signupEmail" type="email" placeholder="you@company.com"></div>
+      <div class="field"><label>Password</label><input id="signupPassword" type="password" placeholder="Create a password"></div>
+      <p class="auth-error" id="signupError"></p>
+      <button class="btn btn-signal btn-block" style="margin-top:6px;" id="signupSubmitBtn" onclick="handleEmailSignUp()">Create free account</button>
+
+      <p class="auth-foot">Already have an account? <a onclick="goTo('screen-signin')" style="cursor:pointer;">Sign in</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ============= SCREEN 4: DASHBOARD APP ============= -->
+<div class="screen" id="screen-dashboard">
+  <div class="app-shell">
+    <div class="app-sidebar">
+      <div class="brand" onclick="goTo('screen-landing')"><div class="brand-mark"></div>CloudBase X</div>
+      <div class="proj-switch"><span>📁 acme-app</span><span>▾</span></div>
+      <div class="app-nav">
+        <div class="item active" data-pane="pane-overview" onclick="showPane(this)"><span class="ic">▣</span> Overview</div>
+        <div class="item" data-pane="pane-database" onclick="showPane(this)"><span class="ic">🗄</span> Database</div>
+        <div class="item" data-pane="pane-auth" onclick="showPane(this)"><span class="ic">◐</span> Authentication</div>
+        <div class="item" data-pane="pane-storage" onclick="showPane(this)"><span class="ic">▤</span> Storage</div>
+        <div class="item" data-pane="pane-realtime" onclick="showPane(this)"><span class="ic">◉</span> Realtime</div>
+        <div class="item" data-pane="pane-functions" onclick="showPane(this)"><span class="ic">✂</span> Functions</div>
+        <div class="item" data-pane="pane-intelligence" onclick="showPane(this)"><span class="ic">⚡</span> Intelligence</div>
+        <div class="item" data-pane="pane-logs" onclick="showPane(this)"><span class="ic">≡</span> Logs</div>
+        <div class="nav-sep"></div>
+        <div class="item" data-pane="pane-integrations" onclick="showPane(this)"><span class="ic">⌘</span> Integrations</div>
+        <div class="item" data-pane="pane-billing" onclick="showPane(this)"><span class="ic">$</span> Billing & plan</div>
+        <div class="item" data-pane="pane-settings" onclick="showPane(this)"><span class="ic">⚙</span> Settings</div>
+      </div>
+      <div class="app-sidebar-foot">
+        <div class="user-chip" onclick="handleSignOut()">
+          <div class="avatar" id="avatarInitial">A</div>
+          <div><div class="un" id="userNameChip">Ada Lovelace</div><div class="ue" id="userEmailChip">Free plan · Sign out</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-main">
+      <div class="app-topbar">
+        <h2 id="paneTitle">Overview</h2>
+        <div class="status"><span class="dot" style="width:6px;height:6px;border-radius:50%;background:var(--good);"></span>All systems operational</div>
+      </div>
+
+      <div class="app-content">
+
+        <!-- OVERVIEW -->
+        <div class="app-pane active" id="pane-overview">
+          <div class="plan-banner">
+            <p>You're on the <b>Free plan</b> — 312 / 500 monthly credits used.</p>
+            <button class="btn btn-signal" style="padding:8px 16px; font-size:13px;" onclick="showPaneById('pane-billing')">Upgrade to Pro — $5.99/mo</button>
+          </div>
+          <div class="card-dark" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; cursor:pointer;" onclick="showPaneById('pane-intelligence')">
+            <div style="display:flex; align-items:center; gap:16px;">
+              <div class="health-score" style="font-size:32px;">87<span style="font-size:13px;">/100</span></div>
+              <div><h3 class="pane-h" style="margin-bottom:2px;">CloudBase Health</h3><p style="color:rgba(255,255,255,0.45); font-size:12.5px;">Your infrastructure is healthy — 3 things worth a look</p></div>
+            </div>
+            <span class="mini-health-pill">⚡ View Intelligence ›</span>
+          </div>
+          <div class="stat-row">
+            <div class="stat-card"><span class="lbl">API requests</span><b>31,204</b><span class="delta">+14% from last week</span></div>
+            <div class="stat-card"><span class="lbl">Active users</span><b>1,847</b><span class="delta">+9% from last week</span></div>
+            <div class="stat-card"><span class="lbl">Database tables</span><b>16</b><span class="delta" style="color:rgba(255,255,255,0.4);">+2 this week</span></div>
+          </div>
+          <div class="chart-card" style="margin-bottom:20px;">
+            <div class="chead"><span>API traffic</span><small>Last 7 days</small></div>
+            <svg viewBox="0 0 900 140" width="100%" height="140" preserveAspectRatio="none">
+              <polyline fill="none" stroke="#2F6FED" stroke-width="2" points="0,90 130,70 260,85 390,50 520,65 650,35 780,45 900,20"/>
+              <polyline fill="none" stroke="#FF7A3D" stroke-width="2" points="0,120 130,110 260,118 390,100 520,108 650,95 780,100 900,88" opacity="0.8"/>
+            </svg>
+          </div>
+          <div class="grid-2">
+            <div class="card-dark">
+              <h3 class="pane-h">Recent activity</h3>
+              <div class="activity"><span class="adot" style="background:var(--sky);"></span><div><p>New user signed up via Google</p><time>2m ago</time></div></div>
+              <div class="activity"><span class="adot" style="background:var(--good);"></span><div><p>Deployed to production from GitHub</p><time>6m ago</time></div></div>
+              <div class="activity"><span class="adot" style="background:var(--signal);"></span><div><p>File uploaded to avatars bucket</p><time>11m ago</time></div></div>
+            </div>
+            <div class="card-dark">
+              <h3 class="pane-h">Quick actions</h3>
+              <div class="qa" onclick="showPaneById('pane-database')" style="cursor:pointer;"><span>New table</span><span>›</span></div>
+              <div class="qa" onclick="showPaneById('pane-integrations')" style="cursor:pointer;"><span>Connect GitHub repo</span><span>›</span></div>
+              <div class="qa" onclick="showPaneById('pane-functions')" style="cursor:pointer;"><span>Create function</span><span>›</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DATABASE -->
+        <div class="app-pane" id="pane-database">
+          <div class="tabs">
+            <div class="tab active" data-tab="tab-tables" onclick="showTab(this)">Tables</div>
+            <div class="tab" data-tab="tab-relations" onclick="showTab(this)">Relationships</div>
+            <div class="tab" data-tab="tab-sql" onclick="showTab(this)">SQL editor</div>
+          </div>
+          <div class="tab-pane active" id="tab-tables">
+            <table class="table-mini">
+              <tr><th>Table</th><th>Rows</th><th>Size</th><th>Updated</th></tr>
+              <tr><td>users</td><td>1,847</td><td>2.4 MB</td><td class="mono">3m ago</td></tr>
+              <tr><td>profiles</td><td>1,847</td><td>1.1 MB</td><td class="mono">3m ago</td></tr>
+              <tr><td>orders</td><td>612</td><td>1.6 MB</td><td class="mono">8m ago</td></tr>
+              <tr><td>products</td><td>340</td><td>900 KB</td><td class="mono">14m ago</td></tr>
+              <tr><td>reviews</td><td>3,105</td><td>6.1 MB</td><td class="mono">15m ago</td></tr>
+            </table>
+          </div>
+          <div class="tab-pane" id="tab-relations">
+            <div class="card-dark" style="text-align:center; color:rgba(255,255,255,0.55); font-size:13.5px; padding:40px;">
+              users → profiles (1:1) &nbsp;·&nbsp; users → orders (1:many) &nbsp;·&nbsp; products → reviews (1:many)
+            </div>
+          </div>
+          <div class="tab-pane" id="tab-sql">
+            <div class="card-dark mono" style="color:#8FB4FF; font-size:13px; line-height:1.7;">
+              select id, email, created_at<br>from users<br>where created_at > now() - interval '7 days'<br>order by created_at desc;
+            </div>
+          </div>
+        </div>
+
+        <!-- AUTH -->
+        <div class="app-pane" id="pane-auth">
+          <div class="card-dark">
+            <h3 class="pane-h">Sign-in providers</h3>
+            <div class="provider-row">
+              <div class="provider-left"><div class="provider-ic">✉</div><div><div class="provider-name">Email & password</div><div class="provider-sub">Classic email/password sign-in</div></div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="provider-row">
+              <div class="provider-left"><div class="provider-ic">G</div><div><div class="provider-name">Google</div><div class="provider-sub">Sign in with a Google account</div></div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="provider-row">
+              <div class="provider-left"><div class="provider-ic">⌗</div><div><div class="provider-name">GitHub</div><div class="provider-sub">Sign in with a GitHub account</div></div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="provider-row">
+              <div class="provider-left"><div class="provider-ic">✦</div><div><div class="provider-name">Magic link</div><div class="provider-sub">Passwordless email sign-in link</div></div></div>
+              <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="provider-row">
+              <div class="provider-left"><div class="provider-ic">☎</div><div><div class="provider-name">Phone (SMS OTP)</div><div class="provider-sub">One-time codes over SMS</div></div></div>
+              <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STORAGE -->
+        <div class="app-pane" id="pane-storage">
+          <div class="card-dark">
+            <h3 class="pane-h">Buckets</h3>
+            <div class="bucket-row"><div class="bl">📦 avatars</div><div>1.2 GB · public</div></div>
+            <div class="bucket-row"><div class="bl">📦 product-images</div><div>640 MB · public</div></div>
+            <div class="bucket-row"><div class="bl">📦 invoices</div><div>88 MB · private</div></div>
+            <button class="btn btn-ghost" style="margin-top:16px; color:white; border-color:rgba(255,255,255,0.2);">+ New bucket</button>
+          </div>
+        </div>
+
+        <!-- REALTIME -->
+        <div class="app-pane" id="pane-realtime">
+          <div class="card-dark">
+            <h3 class="pane-h">Active channels</h3>
+            <div class="bucket-row"><div class="bl">📡 orders:changes</div><div>214 subscribers</div></div>
+            <div class="bucket-row"><div class="bl">📡 chat:room-12</div><div>18 subscribers</div></div>
+            <div class="bucket-row"><div class="bl">📡 presence:lobby</div><div>63 subscribers</div></div>
+          </div>
+        </div>
+
+        <!-- FUNCTIONS -->
+        <div class="app-pane" id="pane-functions">
+          <div class="fn-card"><div><div class="fn-name">send-welcome-email</div><div class="fn-sub">Triggered on new user signup</div></div><div class="fn-status">Active</div></div>
+          <div class="fn-card"><div><div class="fn-name">stripe-webhook</div><div class="fn-sub">Handles billing events</div></div><div class="fn-status">Active</div></div>
+          <div class="fn-card"><div><div class="fn-name">generate-invoice-pdf</div><div class="fn-sub">Runs on order completion</div></div><div class="fn-status">Active</div></div>
+          <button class="btn btn-signal" style="margin-top:6px;">+ New function</button>
+        </div>
+
+        <!-- INTELLIGENCE -->
+        <div class="app-pane" id="pane-intelligence">
+          <div class="grid-2" style="margin-bottom:20px;">
+            <div class="card-dark" style="text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+              <h3 class="pane-h">CloudBase Health</h3>
+              <div class="health-score">87<span>/100</span></div>
+              <p style="color:rgba(255,255,255,0.5); font-size:12.5px; margin-top:8px;">Your infrastructure is healthy.</p>
+            </div>
+            <div class="card-dark">
+              <h3 class="pane-h">Category breakdown</h3>
+              <div class="cat-row"><span class="cat-name">Security</span><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:94%; background:var(--good);"></div></div><span class="cat-num">94</span></div>
+              <div class="cat-row"><span class="cat-name">Database</span><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:82%; background:var(--sky);"></div></div><span class="cat-num">82</span></div>
+              <div class="cat-row"><span class="cat-name">API</span><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:91%; background:var(--sky);"></div></div><span class="cat-num">91</span></div>
+              <div class="cat-row"><span class="cat-name">Performance</span><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:78%; background:var(--signal);"></div></div><span class="cat-num">78</span></div>
+              <div class="cat-row"><span class="cat-name">Auth</span><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:96%; background:var(--good);"></div></div><span class="cat-num">96</span></div>
+            </div>
+          </div>
+
+          <div class="card-dark" style="margin-bottom:20px;">
+            <h3 class="pane-h">⚠️ 3 things you should fix</h3>
+            <div class="issue-card">
+              <span class="issue-ic">🔴</span>
+              <div><b>High database query latency</b><p><code>orders</code> is receiving 4.2× more queries than expected, driving up average response time.</p></div>
+            </div>
+            <div class="issue-card orange">
+              <span class="issue-ic">🟠</span>
+              <div><b>Missing index</b><p><code>user_id</code> on <code>orders</code> is frequently queried without an index — adding one could cut latency significantly.</p></div>
+            </div>
+            <div class="issue-card yellow">
+              <span class="issue-ic">🟡</span>
+              <div><b>Unused API endpoint</b><p><code>/api/legacy/users</code> hasn't received a request in 31 days and is a candidate for removal.</p></div>
+            </div>
+          </div>
+
+          <div class="card-dark">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+              <h3 class="pane-h" style="margin-bottom:0;">Architecture map</h3>
+              <div class="replay-controls">
+                <button class="replay-btn active" data-mode="live" onclick="setReplayMode(this)">Live</button>
+                <button class="replay-btn" data-mode="replay" onclick="setReplayMode(this)">Replay last 24h</button>
+              </div>
+            </div>
+            <svg viewBox="0 0 720 300" width="100%" height="300">
+              <!-- lines -->
+              <path class="arch-line" d="M360,45 L360,80"/>
+              <path class="arch-line" d="M360,80 L220,120"/>
+              <path class="arch-line" d="M360,80 L500,120"/>
+              <path class="arch-line" d="M220,150 L220,185"/>
+              <path class="arch-line hot" id="line-orders" d="M500,150 L500,185"/>
+              <path class="arch-line" d="M220,215 L360,250"/>
+              <path class="arch-line hot" id="line-orders-db" d="M500,215 L360,250"/>
+
+              <!-- Your App -->
+              <rect class="arch-node" x="300" y="14" width="120" height="32" rx="8"/>
+              <text class="arch-label" x="360" y="34" text-anchor="middle">Your App</text>
+
+              <!-- Auth / API -->
+              <rect class="arch-node" x="150" y="88" width="140" height="32" rx="8"/>
+              <text class="arch-label" x="220" y="108" text-anchor="middle">Authentication</text>
+              <rect class="arch-node" x="430" y="88" width="140" height="32" rx="8"/>
+              <text class="arch-label" x="500" y="108" text-anchor="middle">API Layer</text>
+
+              <!-- Users / Orders -->
+              <rect class="arch-node" x="150" y="118" width="140" height="32" rx="8" transform="translate(0,32)"/>
+              <rect class="arch-node" x="150" y="150" width="140" height="32" rx="8"/>
+              <text class="arch-label" x="220" y="170" text-anchor="middle">Users table</text>
+              <rect class="arch-node bottleneck" id="node-orders" x="430" y="150" width="140" height="32" rx="8"/>
+              <text class="arch-label" x="500" y="170" text-anchor="middle">Orders</text>
+              <text class="arch-sub hot" id="orders-load" x="500" y="184" text-anchor="middle">4.2x load</text>
+
+              <!-- DB -->
+              <rect class="arch-node" x="290" y="250" width="140" height="34" rx="8"/>
+              <text class="arch-label" x="360" y="271" text-anchor="middle">PostgreSQL DB</text>
+
+              <!-- flow counters -->
+              <text class="arch-sub" id="flow-users" x="220" y="230" text-anchor="middle">2.1k req</text>
+              <text class="arch-sub" id="flow-orders" x="500" y="230" text-anchor="middle">18k req</text>
+            </svg>
+            <p id="replayCaption" style="color:rgba(255,255,255,0.4); font-size:12px; margin-top:6px;">Showing live traffic. Switch to Replay to see where yesterday's spike hit.</p>
+          </div>
+        </div>
+
+        <!-- LOGS -->
+        <div class="app-pane" id="pane-logs">
+          <div class="card-dark">
+            <div class="log-row"><span class="lvl ok">200</span><span class="t">10:41:02</span><span>GET /rest/v1/products — 18ms</span></div>
+            <div class="log-row"><span class="lvl ok">200</span><span class="t">10:41:00</span><span>POST /auth/v1/token?grant_type=password</span></div>
+            <div class="log-row"><span class="lvl info">INFO</span><span class="t">10:40:55</span><span>Function send-welcome-email invoked</span></div>
+            <div class="log-row"><span class="lvl warn">429</span><span class="t">10:40:41</span><span>GET /rest/v1/reviews — rate limited</span></div>
+            <div class="log-row"><span class="lvl ok">200</span><span class="t">10:40:38</span><span>GET /storage/v1/object/avatars/12.png</span></div>
+          </div>
+        </div>
+
+        <!-- INTEGRATIONS -->
+        <div class="app-pane" id="pane-integrations">
+          <div class="integration-card">
+            <div class="integration-left">
+              <div class="integration-ic">⌗</div>
+              <div><div class="integration-title">GitHub</div><div class="integration-sub">Linked to acme-org/acme-app — auto-deploys on push to main</div></div>
+            </div>
+            <div class="pill-connected"><span class="d"></span>Connected</div>
+          </div>
+          <div class="card-dark" style="margin-bottom:16px;">
+            <h3 class="pane-h">Linked repository</h3>
+            <div class="repo-row"><div class="rname">📁 acme-org/acme-app</div><span>main</span></div>
+            <div class="repo-row"><div class="rname">📄 supabase/migrations/0001_init.sql</div><span class="mono" style="color:rgba(255,255,255,0.4);">synced</span></div>
+            <div class="repo-row"><div class="rname">📄 supabase/functions/stripe-webhook</div><span class="mono" style="color:rgba(255,255,255,0.4);">synced</span></div>
+          </div>
+          <div class="integration-card">
+            <div class="integration-left"><div class="integration-ic">▲</div><div><div class="integration-title">Vercel</div><div class="integration-sub">Sync environment variables to your frontend deploys</div></div></div>
+            <button class="btn btn-ghost" style="color:white; border-color:rgba(255,255,255,0.2); padding:8px 14px; font-size:13px;">Connect</button>
+          </div>
+          <div class="integration-card">
+            <div class="integration-left"><div class="integration-ic">💬</div><div><div class="integration-title">Slack</div><div class="integration-sub">Get alerts for deploys and errors in a channel</div></div></div>
+            <button class="btn btn-ghost" style="color:white; border-color:rgba(255,255,255,0.2); padding:8px 14px; font-size:13px;">Connect</button>
+          </div>
+        </div>
+
+        <!-- BILLING -->
+        <div class="app-pane" id="pane-billing">
+          <div class="grid-2">
+            <div class="card-dark">
+              <h3 class="pane-h">Free plan</h3>
+              <p style="color:rgba(255,255,255,0.55); font-size:13.5px; margin-bottom:14px;">312 / 500 monthly credits used · resets in 12 days</p>
+              <div class="price-amount" style="color:white; margin-bottom:16px;"><b>$0</b><span style="color:rgba(255,255,255,0.4);">/ month</span></div>
+              <button class="btn btn-ghost" style="width:100%; color:white; border-color:rgba(255,255,255,0.2);" disabled>Current plan</button>
+            </div>
+            <div class="card-dark" style="border-color:var(--signal);">
+              <h3 class="pane-h">Pro plan</h3>
+              <p style="color:rgba(255,255,255,0.55); font-size:13.5px; margin-bottom:14px;">25,000 monthly credits · GitHub auto-deploys · no idle pausing</p>
+              <div class="price-amount" style="color:white; margin-bottom:16px;"><b>$5.99</b><span style="color:rgba(255,255,255,0.4);">/ month</span></div>
+              <button class="btn btn-signal btn-block">Upgrade to Pro</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="app-pane" id="pane-settings">
+          <div class="grid-2">
+            <div class="card-dark field-dark">
+              <h3 class="pane-h">Project settings</h3>
+              <label>Project name</label>
+              <input type="text" value="acme-app">
+              <label>Region</label>
+              <select><option>US East (N. Virginia)</option><option>EU West (Ireland)</option><option>AP South (Mumbai)</option></select>
+              <button class="btn btn-primary" style="margin-top:4px;">Save changes</button>
+            </div>
+            <div class="card-dark">
+              <h3 class="pane-h">API keys</h3>
+              <div class="key-box"><span>anon public key</span><span class="copy-btn">Copy</span></div>
+              <div class="key-box"><span>service role key</span><span class="copy-btn">Copy</span></div>
+              <div class="key-box"><span>project URL</span><span class="copy-btn">Copy</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Supabase client library -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Public config: Supabase project URL + anon/publishable key ONLY. See config.js -->
+<script src="config.js"></script>
+
+<script>
+  // ---------- Supabase client ----------
+  // CLOUDBASEX_CONFIG is defined in config.js and holds only the public
+  // SUPABASE_URL and SUPABASE_ANON_KEY (safe to ship to the browser).
+  // The service_role key must NEVER appear in this file or config.js.
+  const supabaseClient = window.supabase.createClient(
+    window.CLOUDBASEX_CONFIG.SUPABASE_URL,
+    window.CLOUDBASEX_CONFIG.SUPABASE_ANON_KEY
+  );
+
+  let currentUser = null;         // in-memory auth state
+  let pendingDashboardEntry = false;
+
+  // ---------- Navigation / protected routes ----------
+  function goTo(id){
+    if(id === 'screen-dashboard' && !currentUser){
+      // Protected route: no session, send to sign in instead.
+      id = 'screen-signin';
+    }
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  // ---------- Auth state management ----------
+  function setAuthError(elId, message, isSuccess){
+    const el = document.getElementById(elId);
+    el.textContent = message || '';
+    el.classList.toggle('success', !!isSuccess);
+  }
+
+  function applyUserToUI(user){
+    if(!user) return;
+    const meta = user.user_metadata || {};
+    const displayName = meta.full_name || meta.name || (user.email ? user.email.split('@')[0] : 'Account');
+    const initial = displayName.trim().charAt(0).toUpperCase() || 'U';
+    const avatarEl = document.getElementById('avatarInitial');
+    const nameEl = document.getElementById('userNameChip');
+    const emailEl = document.getElementById('userEmailChip');
+    if(avatarEl) avatarEl.textContent = initial;
+    if(nameEl) nameEl.textContent = displayName;
+    if(emailEl) emailEl.textContent = (user.email || '') + ' · Sign out';
+  }
+
+  async function refreshAuthState(session){
+    currentUser = session ? session.user : null;
+    if(currentUser){
+      applyUserToUI(currentUser);
+    }
+    return currentUser;
+  }
+
+  // Fires on sign in, sign out, token refresh, and OAuth redirect completion.
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    await refreshAuthState(session);
+    if(event === 'SIGNED_IN' && session){
+      goTo('screen-dashboard');
+    }
+    if(event === 'SIGNED_OUT'){
+      goTo('screen-landing');
+    }
+  });
+
+  // On page load: restore an existing session (or complete an OAuth redirect)
+  // before deciding which screen to show.
+  (async function initAuth(){
+    const { data, error } = await supabaseClient.auth.getSession();
+    if(!error && data.session){
+      await refreshAuthState(data.session);
+      goTo('screen-dashboard');
+    }
+  })();
+
+  // ---------- Email/password auth ----------
+  async function handleEmailSignIn(){
+    setAuthError('signinError', '');
+    const email = document.getElementById('signinEmail').value.trim();
+    const password = document.getElementById('signinPassword').value;
+    if(!email || !password){
+      setAuthError('signinError', 'Enter your email and password.');
+      return;
+    }
+    const btn = document.getElementById('signinSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    btn.disabled = false; btn.textContent = 'Sign in';
+    if(error){
+      setAuthError('signinError', error.message);
+      return;
+    }
+    // onAuthStateChange will route to the dashboard once the session lands.
+  }
+
+  async function handleEmailSignUp(){
+    setAuthError('signupError', '');
+    const fullName = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+    if(!fullName || !email || !password){
+      setAuthError('signupError', 'Fill in your name, email, and password.');
+      return;
+    }
+    if(password.length < 6){
+      setAuthError('signupError', 'Password should be at least 6 characters.');
+      return;
+    }
+    const btn = document.getElementById('signupSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Creating account…';
+    const { data, error } = await supabaseClient.auth.signUp({
+      email, password,
+      options: { data: { full_name: fullName } }
+    });
+    btn.disabled = false; btn.textContent = 'Create free account';
+    if(error){
+      setAuthError('signupError', error.message);
+      return;
+    }
+    if(data.session){
+      // Email confirmation is disabled on this project — session is live immediately.
+      // onAuthStateChange will route to the dashboard.
+    } else {
+      // Email confirmation required — no session yet.
+      setAuthError('signupError', 'Check your inbox to confirm your email, then sign in.', true);
+    }
+  }
+
+  // ---------- OAuth (Google / GitHub) ----------
+  async function signInWithProvider(provider){
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: window.location.href }
+    });
+    if(error){
+      // Surface the error on whichever auth screen is active.
+      const target = document.getElementById('screen-signup').classList.contains('active') ? 'signupError' : 'signinError';
+      setAuthError(target, error.message);
+    }
+    // On success, Supabase redirects the browser to the OAuth provider.
+  }
+
+  // ---------- Sign out ----------
+  async function handleSignOut(){
+    await supabaseClient.auth.signOut();
+    // onAuthStateChange fires SIGNED_OUT and routes to the landing screen.
+  }
+
+  function showPane(el){
+    document.querySelectorAll('.app-nav .item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+    const paneId = el.getAttribute('data-pane');
+    document.querySelectorAll('.app-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById(paneId).classList.add('active');
+    document.getElementById('paneTitle').innerText = el.innerText.trim();
+  }
+  function showPaneById(paneId){
+    const navItem = document.querySelector('.app-nav .item[data-pane="'+paneId+'"]');
+    if(navItem) showPane(navItem);
+  }
+  function setReplayMode(el){
+    document.querySelectorAll('.replay-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    const mode = el.getAttribute('data-mode');
+    const caption = document.getElementById('replayCaption');
+    const flowOrders = document.getElementById('flow-orders');
+    const ordersLoad = document.getElementById('orders-load');
+    if(mode === 'replay'){
+      caption.innerText = "Replaying yesterday 2:00–3:00 PM — traffic spiked and the Orders table became the bottleneck.";
+      flowOrders.innerText = "41k req ↑";
+      ordersLoad.innerText = "6.8x load ⚠";
+    } else {
+      caption.innerText = "Showing live traffic. Switch to Replay to see where yesterday's spike hit.";
+      flowOrders.innerText = "18k req";
+      ordersLoad.innerText = "4.2x load";
+    }
+  }
+  function showTab(el){
+    const group = el.parentElement;
+    group.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    const tabId = el.getAttribute('data-tab');
+    const paneParent = group.parentElement;
+    paneParent.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+  }
+</script>
+</body>
+</html>
